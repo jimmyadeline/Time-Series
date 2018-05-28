@@ -1,0 +1,179 @@
+---
+title: "STAT 621 HW 1"
+author: "Yingying Xu"
+date: "1/22/2018 (Due)"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Q.1 Random walk with drift
+
+Theory: For a random walk with drift $x_t=\delta+x_{t-1}+w_t$ derive: 
+
+a) mean (assume $x_0=0$)
+$$
+E[x_t]=E[\delta+x_{t-1}+w_t]=E[t\delta+x_0+\sum^t_{i=1}w_i]=t\delta+E[x_0]+E[\sum^t_{i=1}w_i]=t\delta
+$$
+b) variance
+$$
+Var(x_t)=E[(x_t-\mu_t)^2]=E[(x_0+\sum^t_{i=1}w_i)^2]=t\sigma^2_w
+$$
+c) covariance of the process at time point s and time point t
+$$
+cov(x_s,x_t)=cov(s\delta+\sum^s_{i=1}w_i,t\delta+\sum^t_{i=1}w_i)
+$$
+If $s=t$, then $cov(x_s,x_t)=s\sigma^2_w$; if $s<t$,then $cov(x_s,x_t)=s\sigma^2_w$. So in general:
+$$
+cov(x_s,x_t)=cov(s\delta+\sum^s_{i=1}w_i,t\delta+\sum^t_{i=1}w_i)=min\{s,t\}\sigma^2_w
+$$
+d) autocorrelation of the process at time point s and time point t 
+$$
+\rho(s,t)=\dfrac{\gamma(s,t)}{\sqrt{\gamma(s,s)*\gamma(t,t)}}=\dfrac{min\{s,t\}\sigma^2_w}{\sqrt{s*t*\sigma^4_w}}=\dfrac{min\{s,t\}}{\sqrt{s*t}}
+$$
+
+## Q.2 
+
+Show that the autocovariance function can be written as $\gamma(s,t)=E[(x_s-\mu_s)(x_t-\mu_t)]=E[x_sx_t]-\mu_s\mu_t$ 
+
+$$
+\gamma(s,t)=E[(x_s-\mu_s)(x_t-\mu_t)]=E[x_sx_t-\mu_sx_t-\mu_tx_s+\mu_s\mu_t]=E[x_sx_t]-E[\mu_sx_t]-E[\mu_tx_s]+\mu_s\mu_t
+$$
+when $E[x_t]=\mu_t$ and $E[x_s]=\mu_s$, thus
+$$
+\gamma(s,t)=E[x_sx_t]-\mu_sE[x_t]-\mu_tE[x_s]+\mu_s\mu_t=E[x_sx_t]-\mu_s\mu_t
+$$
+
+## Q.3 Computation:Random walk with drift
+  a) Simulate 50 realizations 
+  b) Plot the 50 realizations on the same graph. 
+  c) Add 3 reference lines to the graph
+    - the mean
+    - the mean + $2*$standard deviation
+    - the mean - $2*$standard deviation
+
+Generate $n=50$ observations from the random walk with drift $\delta=2$
+$$
+x_t=2+x_{t-1}+w_t
+$$
+
+```{r}
+set.seed(1001)
+w = rnorm(50,0,1)
+x = cumsum(w) # RW
+wd = w + 2
+xd = cumsum(wd) #RW with drift
+t=(0:50)
+y1 = 2*t+2*sqrt(t)*1
+y2 = 2*t-2*sqrt(t)*1
+```
+Random walk with drift can be written as $x_t=\delta+x_{t-1}+w_t=\delta t +\sum^J_{j=1}w_t$. The expectation is $E[x_t]=\delta t$ and the variance is $V[x_t]=t\delta^2$. Then the standard deviation is $\sqrt{t}\delta$. 
+Now plot $xd_t$.
+```{r}
+plot.ts(xd, lwd=1, col="red", ylim = c(-5,110), main="random with drift", ylab='drift=2')
+lines(y1,lty=2,lwd=1)
+lines(y2,lty=2,lwd=1)
+abline(a=0,b=2,lty=2,lwd=1,col="slategray")
+```
+
+Compare if we have a smaller drift, say $\delta=0.3$, then the reference lines "the mean +/- 2\* standard deviation" would be $0.3*t+2*\sqrt{t}*\sigma_w$ and $0.3*t-2*\sqrt{t}*\sigma_w$.They look like curves. 
+
+the graph will be:
+```{r}
+set.seed(1001)
+w = rnorm(50,0,1)
+x = cumsum(w) # RW
+wd = w + 0.3
+xd = cumsum(wd) #RW with drift
+t=(0:50)
+y1 = 0.3*t+2*sqrt(t)*1
+y2 = 0.3*t-2*sqrt(t)*1
+
+plot.ts(xd, lwd=1, col="red", ylim = c(-5,40), main="random with drift", ylab='drift=0.3')
+lines(y1,lty=2,lwd=1)
+lines(y2,lty=2,lwd=1)
+abline(a=0,b=0.3,lty=2,lwd=1,col="slategray")
+```
+
+
+## Q.4 Signal-plus-noise Model 
+
+Consider a signal-plus-noise model of the general form $x_t=s_t+w_t$ with $w_t$ is Gaussian white noise with $\sigma^2_w=1$. Simulate and plot n=200 observations from each of the following two models.
+
+a) $x_t=s_t+w_t$.$s_t=0, t=1,...,100$ and $s_t=10exp\{-\dfrac{(t-100)}{20}\}cos(2\pi t/4), t=101,...,200$
+
+b) $x_t=s_t+w_t$.$s_t=0, t=1,...,100$ and $s_t=10exp\{-\dfrac{(t-100)}{200}\}cos(2\pi t/4), t=101,...,200$
+
+```{r}
+set.seed(123)
+w = rnorm(200,0,1)
+s1 = c(rep(0,100),10*exp(-(1:100)/20)*cos(2*pi*1:100/4))
+x1 = s1 + w
+
+s2 = c(rep(0,100),10*exp(-(1:100)/200)*cos(2*pi*1:100/4))
+x2 = s2 + w
+```
+
+```{r}
+plot.ts(x1,lty=1,lwd=1.5,col="blue", ylab='Blue(a); Red(b)')
+lines(x2,lty=2,lwd=1.5,col="red")
+```
+The blue line is for part(a) $exp\{-t/20\}$ and red line is for part(b) $exp\{-t/200\}$
+
+# c)
+
+Compare to the earthquake and explosion graph, we can found the red line is more like to be an earthquake line and the blue line is for an explosion. As mentioned in the book, the ratio of maximum amplitudes appears to be smaller in earthquake compared with the explosion. We can find after $t>100$, the explosion is fading away quickly, but the earthquake is still active.
+
+As we can see the graph below, $exp\{-t/20\}$ drops quicker than $exp\{-t/200\}$. That's why we found the blue signal-plus-model dies down quicker than the red one.
+
+```{r}
+y1 = exp(-(1:100)/20)
+y2 = exp(-(1:100)/200)
+
+plot.ts(y1,lty=1,lwd=1.5,col="blue", ylab='')
+lines(y2,lty=2,lwd=1.5,col="red")
+```
+
+## Q.5
+
+a) Compute and plot the mean function $\mu_x(t)$, for $t=1,...,200$.
+
+$\mu_x(t)=E[x_t]=E[s_t+w_t]=E[s_t]+E[w_t]$, where $E[w_t]=0$
+
+For $t=1,...,100$, $s_t=0$.So $\mu_x(t)=E[s_t]+E[w_t]=0$
+
+For $t=101,...,101$, $s_t=10exp\{-\dfrac{(t-100)}{20}\}cos(2\pi t/4)$, $E[s_t]=10exp\{-\dfrac{(t-100)}{20}\}cos(2\pi t/4)$. Then $\mu_x(t)=E[s_t]+E[w_t]=E[s_t]=10exp\{-\dfrac{(t-100)}{20}\}cos(2\pi t/4)=s_t$.
+
+Similarly for part(b), when $t=1,...,100$, $\mu_x(t)=0$ and when $t=101,...,101$, $\mu_x(t)=E[s_t]+E[w_t]=E[s_t]=10exp\{-\dfrac{(t-100)}{200}\}cos(2\pi t/4)=s_t$
+
+In general, for $t\leq 100$, $\mu_x(t)=0$; for $t>100$, $\mu_x(t)=s_t$.
+
+
+```{r}
+mu_1=c(rep(0,100),10*exp(-(1:100)/20)*cos(2*pi*1:100/4))
+mu_2=c(rep(0,100),10*exp(-(1:100)/200)*cos(2*pi*1:100/4))
+
+plot.ts(mu_1,lty=1,lwd=1.5,col="blue",ylab='')
+lines(mu_2,lty=2,lwd=1.5,col="red")
+```
+The blue line is for part(a) $exp\{-t/20\}$ and red line is for part(b) $exp\{-t/200\}$
+
+
+b) Calculate the autocovariance functions,$\gamma_x(s,t)$, for $t=1,...,200$.
+
+$$
+Cov[x_s,x_t]=E[(x_s-\mu_s)(x_t-\mu_t)]
+$$
+As we already found $s_t=E[s_t]$. Then $x_t-\mu_t=(s_t+w_t)-E[s_t]-E[w_t]=w_t$. The above equation can be written as:
+
+$$
+Cov[x_s,x_t]=E[w_sw_t]
+$$
+When $s=t$, then $Cov[x_s,x_t]=\sigma^2_w$.
+
+When $s\neq t$, then $Cov[x_s,x_t]=0$. There is no time correlation between each element, if we assume $w_t$ is iid.
+
+
+

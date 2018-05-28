@@ -1,0 +1,157 @@
+---
+title: "STAT 621 HW 7 GARCH"
+author: "Yingying Xu"
+date: "4/7/2018 (Due)"
+output: pdf_document
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(stats)
+library(astsa)
+library(forecast)
+
+library(fGarch)
+library(xts)
+```
+
+# Q1
+
+```{r}
+tsdisplay(oil)
+tsdisplay(log(oil))
+
+doil=diff(log(oil))
+tsdisplay(doil,lag.max = 300)
+
+doil_52=diff(doil,52)   # Since it is weekly data
+tsdisplay(doil_52,lag.max = 300) 
+```
+
+```{r}
+auto.arima(log(oil))
+```
+
+Auto.Arima shows it might be a $[3,1,0][1,0,1][52]$ Sarima model.
+
+
+```{r}
+sarima(log(oil),p=3,d=1,q=0,P=0,D=1,Q=1,S=52,xreg=1:545,no.constant=T, details=T)
+```
+
+### The normal Q-Q Plot of Std Residuals suggests it might fit a (G)arch model.
+
+```{r}
+oilr <- resid(sarima(log(oil),p=3,d=1,q=0,P=0,D=1,Q=1,S=52,xreg=1:545,no.constant=T, details=F)$fit )
+invisible(plot(oilr))             # plot residuals
+invisible(acf2(oilr))             # P/ACF suggest noise
+invisible(acf2(oilr^2))           # some correlation
+```
+
+The $residual^2$ ($oilr^2$) suggests it could be a GARCH(2,0) model.
+
+```{r}
+summary(fit <- garchFit(~garch(2,0), data=oilr))  # alpha1 and alpha2 are significant  
+par(mfrow=2:1)         
+plot(fit, which=1:2)    # plot data and root volatility
+plot(fit, which=c(3,7)) # Series with 2 Conditonal SD; Standardized Residuals
+```
+
+## Q1 Conclusion:
+First I use auto.arima to detect the model and then fit the sarima model. The normal Q-Q Plot of Std Residuals suggests it might fit a (G)arch model. After trying different garch combination, Garch(2,0) fit well. Both alpha1 and alpha2 are significant. I suggest it is a $SARIMA[3,1,0]\times[0,1,1]_{52}+GARCH(2,0)$ model.
+
+
+# Q2 Eu Stock Markets
+```{r}
+ftse<-EuStockMarkets[, "FTSE"]
+tsdisplay(ftse)
+```
+
+### Transfer the data as return 
+
+$r_t=\frac{x_t-x_{t-1}}{x_{t-1}}\approx log(r_t)=log(\frac{x_t}{x_{t-1}})$, so we gan use $diff(log(data))$ as a proxy of growth rate.
+
+```{r}
+tsdisplay(diff(log(ftse)))
+```
+
+```{r}
+sarima(diff(log(ftse)),1,0,0)
+```
+
+### Get the residuals from an AR(1) fit
+
+```{r}
+ftser <- resid(sarima(diff(log(ftse)), 1,0,0, details=FALSE)$fit )  
+
+# Looking at residuals to growth rate
+invisible(plot(ftser))             # plot residuals
+invisible(acf2(ftser))             # P/ACF suggest noise
+invisible(acf2(ftser^2))           # some correlation
+```
+
+```{r}
+# Let's try fitting an ARCH model
+summary(fit <- garchFit(~garch(1,1), data=ftser))  
+# alpha1 and beta1 are significant. I also tried other different combinations but Garch(1,1) is the best fit.
+
+par(mfrow=2:1)         
+plot(fit, which=1:2)    # plot data and root volatility
+plot(fit, which=c(3,7)) # Series with 2 Conditonal SD; Standardized Residuals
+```
+
+```{r}
+# ARMA with ARCH errors
+ftsedl <- diff(log(ftse))
+fit2<- garchFit(~arma(1,0)+garch(1,1), data=ftsedl)
+summary(fit2)
+```
+
+### Skew Normal fit
+Note the null hypothesis of normality was rejected. Try a skew-normal. Skew parameter is significant under the model.
+
+```{R}
+fit3<- garchFit(~arma(1,0)+garch(1,1), cond.dist="snorm", data=ftsedl)
+summary(fit3)
+```
+
+### Conclusion: the model $ARMA(1,0)+GARCH(1,1)$ with skew normal distribution fit the data.
+
+# Q3
+
+```{r}
+djiar = diff(log(djia$Close))[-1]
+acf2(djiar)    # exhibits some autocorrelation
+acf2(djiar^2)  # oozes autocorrelation
+```
+```{r}
+# GARCH fit
+summary(fit_31<- garchFit(~arma(1,0)+garch(1,1), data=djiar, cond.dist='std'))
+plot(fit_31,which=3)
+```
+
+# APARCH fit
+Suppose $y_t$ is APARCH noise with conditional variance.
+
+```{r}
+summary(fit_32<- garchFit(~arma(1,0)+aparch(1,1), data=djiar, cond.dist='std'))
+plot(fit_32,which=3)
+```
+
+### Conclusion: The distribution of the noise is not normal. But in the fGarch package there are various distributions to fit the data. May use skew distribution or some other distributions. Compare model fits -- essentially the same but skew coefficient is significant.I would choose the model with skew distribution.
+
+```{r}
+fit_33<- garchFit(~arma(1,0)+garch(1,1), data=djiar, cond.dist="snorm")
+summary(fit_33)
+```
+
+```{r}
+fit_31@fit$ics
+fit_32@fit$ics
+fit_33@fit$ics
+
+# Forecasting from ARMA+GARCH models
+#invisible(predict(fit_31,n.head=5,nx=200,plot=TRUE))
+#invisible(predict(fit_32,n.head=5,nx=200,plot=TRUE))
+invisible(predict(fit_33,n.head=5,nx=200,plot=TRUE))
+```

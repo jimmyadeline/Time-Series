@@ -1,0 +1,222 @@
+---
+title: "STAT 621 HW 5"
+author: "Yingying Xu"
+date: "3/21/2018 (Due)"
+output: pdf_document
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(stats)
+library(astsa)
+library(forecast)
+```
+
+# 3.28 Verify IMA(1,1) model
+
+$x_t=x_{t-1}+w_t-\lambda w_{t-1} \textrm{ as } |\lambda|<1$.
+
+Defining $y_t=w_t-\lambda w_{t-1}=x_t-x_{t-1}$, because $|\lambda|<1$, then it is invertible.
+
+$y_t=w_t-\lambda w_{t-1}=\sum^{\infty}_{j=1} \lambda^jy_{t-j}+w_t$
+
+Substituting $y_t=x_t-x_{t-1}$,
+
+then $y_t=x_t-x_{t-1}=\sum^{\infty}_{j=1} \lambda^jy_{t-j}+w_t=\sum^{\infty}_{j=1}\lambda^j(x_{t-j}-x_{t-j-1})+w_t$
+
+$x_t=x_{t-1}+\sum^{\infty}_{j=1} \lambda^j(x_{t-j}-x_{t-j-1})+w_t=x_{t-1}+\lambda(x_{t-1}-x_{t-2})+\lambda^2(x_{t-2}-x_{t-3})...+w_t=\sum^{\infty}_{j=1} (1-\lambda)\lambda^{j-1}x_{t-j}+w_t$
+
+# 3.30
+
+```{r}
+set.seed(666)
+y=varve[1:100]
+x=log(y)
+(x.ima1=HoltWinters(x,alpha=0.75,beta=FALSE,gamma=FALSE)) #lambda=0.25
+(x.ima2=HoltWinters(x,alpha=0.50,beta=FALSE,gamma=FALSE)) #lambda=0.50
+(x.ima3=HoltWinters(x,alpha=0.25,beta=FALSE,gamma=FALSE)) #lambda=0.75
+
+par(mfrow=c(3,1))
+plot(x.ima1,main="lambda=0.25")
+plot(x.ima2,main="lambda=0.50")
+plot(x.ima3,main="lambda=0.75")
+```
+
+The blck lines are true value and red lines are forecasts with different lambda. As shown above, large values of $\lambda$ lead to smoother forecasts.
+
+# 3.33 Fit an ARIMA(p,d,q) model to globtemp
+```{r}
+plot.ts(globtemp,lwd=1.5,ylab='')
+```
+
+```{r}
+invisible(astsa::acf2(globtemp,max.lag = 100))
+```
+
+The ACF is linearly decaying and PACF has a peak in lag(1). May use first differencing.
+
+```{r}
+# Remove the trend by diff
+dglobtemp=diff(globtemp)
+tsdisplay(dglobtemp)
+invisible(astsa::acf2(dglobtemp,max.lag = 100))
+```
+
+```{r}
+tsdisplay(diff(dglobtemp,4))
+#invisible(astsa::acf2(diff(dglobtemp,4),max.lag = 100))
+```
+
+The PACF is exponentially deaying in seasonal pattern, the ACF has a peak in lag(4). Use SARIMA(0,1,1)[4].Try different combination in ARIMA model and examine the AICc, BIC, residuals, and p values. Finally I choose $SARIMA(1,1,1)\times(0,1,1)[4]$.
+
+```{r}
+astsa::sarima(globtemp,p=1,d=1,q=1,P=0,D=1,Q=1,S=4,no.constant=T, details=T)
+```
+
+```{r}
+sarima.for(globtemp,p=1,d=1,q=1,P=0,D=1,Q=1,S=4,no.constant=T,n.ahead=10)
+```
+
+# 3.35
+
+## A) Initial examination of the data
+```{r}
+tsdisplay(sales)
+#invisible(astsa::acf2(sales,max.lag = 100))
+```
+The ACF is linearly decaying. PACF has a peak at lag 1.
+
+## B) transformations
+```{r}
+l_sales=log(sales)
+d_sales=diff(sales)
+par(mfrow=c(2,1))
+ts.plot(l_sales)
+ts.plot(d_sales)
+```
+Pick the first differencing. 
+
+```{r}
+#tsdisplay(d12_sales,max.lag = 100)
+invisible(astsa::acf2(d_sales,max.lag = 100))
+```
+
+## C) Initial identification of the dependence orders and differencing
+There is no need to do a logarithm transformations. We may start with $ARIMA(1,1,1)$.
+
+## D) Parameter estimation
+```{r}
+sarima(sales,p=1,d=1,q=1,xreg=1:150,no.constant = T, details = T)
+```
+
+## E) Residual diagnostics and model choice
+The ACF of Residuals are all in bounds and p_values are all out of the significant level.ARIMA(1,1,1) looks good.
+
+## b) Use the CCF and lag plots
+```{r}
+d_sales=diff(sales)
+d_lead=diff(lead)
+ccf(d_lead,d_sales,ylab="CCovF", type ='correlation')
+lag2.plot(d_lead,d_sales, max.lag = 3, corr = TRUE, smooth = TRUE)
+```
+A regression of $\Delta S_t$ on $\Delta L_{t-3}$ is reasonable. The correlation between $\Delta S_t$ on $\Delta L_{t-3}$ is 0.72, $\Delta S_t$ on $\Delta L_{t-2}$ is -0.38. Lag(3) is a good fit.
+
+## c) Fit the Regression Model
+
+$\Delta S_t =\beta_0 +\beta_1\Delta L_{t-3}+x_t$ where $x_t$ is an ARMA process.
+
+```{r}
+fit=lm(d_sales[4:149]~d_lead[1:146])
+summary(fit)
+invisible(acf2(resid(fit),100))
+```
+There is a lag(1) peak in PACF. Try AR(1) model.
+
+```{r}
+adjfit=sarima(d_sales[4:149],1,0,0,xreg=d_lead[1:146])
+adjfit
+invisible(acf2(resid(adjfit$fit),max.lag = 100)) # show residual, it should be white noise
+```
+
+The ACF/PACF of residuals are following white noise distribution. The model is good.
+
+# 3.36
+```{r}
+#tsdisplay(cpg)
+plot(cpg)
+```
+
+The retail price per GB reached a peak around 1982 and then start exponentially decay during 1982 to 1990. It becomes more and more constant after 1990, close to 0 after 1995.
+
+```{r}
+log_cpg=log(cpg)
+t=(1:length(cpg))
+t=t+1980
+m=lm(log_cpg~t)
+summary(m)
+plot(log_cpg,lwd=2, col="darkblue")
+abline(a = coef(m)[1], b = coef(m)[2], lty=2, lwd=2, col="red")
+```
+The transformed log(cpg) fits the linear regression well. The coefficient -0.5851 with constant 1173.079 (since we need to start in 1980). Therefore, $log(cpg)=log(\alpha)+\beta t=1173.079-0.5851$.
+
+```{r}
+invisible(acf2(resid(m),28))
+```
+The R-squared is 0.985, t explains $98.5\%$ of the total log(cpg). The resid(m) suggests it might be an AR(1) model.
+
+```{r}
+sarima(log_cpg,1,0,0,xreg=t,details=T)
+```
+The residual diagnositics shows the residuals are normal and within the bounds. p values are out of significant levels. The model is OK. $x_t=1113.5659+0.8297*x_{t-1}-0.5554*t$.
+
+
+# 3.39 
+Plot the ACF of the seasonal $ARIMA(0,1)\times(1,0)_{12}$ model with $\Phi=0.8$ and $\theta=0.5$
+$$
+x_t=\Phi x_{t-12}+w_t+\theta w_{t-1}
+$$
+
+```{r}
+set.seed(666)
+phi=c(rep(0,11),0.8)
+ACF=ARMAacf(ar=phi,ma=0.5,50)
+plot(ACF, type="h",xlab="LAG",ylim=c(-.1,1));abline(h=0)
+```
+
+# 3.42
+```{r}
+tsdisplay(UnempRate)
+```
+
+The lag 1,13, 25... is significant. Suggest it is a AR(1) with seasonal pattern.
+
+```{r}
+l_UnempRate=log(UnempRate)
+tsdisplay(l_UnempRate)
+```
+
+```{r}
+d_UnempRate=diff(UnempRate)
+plot(d_UnempRate)
+invisible(acf2(d_UnempRate,144))
+```
+
+It is exponentially decaying in PACF at lag 12,24,36...The ACF is linearly decaying. 
+
+```{r}
+d12_UnempRate=diff(d_UnempRate,12) #seasonal differencing the diff(UnempRate)
+tsdisplay(d12_UnempRate)
+invisible(acf2(d12_UnempRate,144))
+```
+It is clear that the PACF is exponentially decay in lag(12), and one peak in ACF lag(12). Use SARIMA(0,1,1)[12] and try other numbers in ARIMA. We may try different combinations of ARIMA.
+
+```{r}
+t=length(l_UnempRate)
+sarima(UnempRate,p=2,d=1,q=1,P=0,D=1,Q=1,S=12,xreg=1:t,no.constant = T, details = T)
+```
+
+By trying different combinations, I choose $SARIMA(2,1,1)\times(0,1,1)_{12}$. The residual diagnosis shows the residuals are all within the bounds.
+
+```{r}
+sarima.for(l_UnempRate,p=2,d=1,q=1,P=0,D=1,Q=1,S=12,no.constant = T, n.ahead=12)
+```

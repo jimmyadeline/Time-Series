@@ -1,0 +1,365 @@
+---
+title: "STAT 621 HW 6 Spectral Analysis and Filtering"
+author: "Yingying Xu"
+date: "4/4/2018 (Due)"
+output: pdf_document
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(stats)
+library(astsa)
+library(forecast)
+```
+
+# Verify Equation 4.5
+
+$$
+\gamma_x(h)=\sum^q_{k=1}\sigma^2_k cos(2 \pi w_k h)
+$$
+
+Based on Equation 4.4:
+$$
+x_t=\sum^q_{k=1}[U_{k1} cos(2\pi w_k t)+U_{k2} sin(2\pi w_k t)]
+$$
+We have:
+$$
+\gamma_x(h)=cov(x_{t+h,x_t})=cov(\sum^q_{k=1}[U_{k1} cos(2\pi w_k (t+h))+U_{k2} sin(2\pi w_k (t+h))],\sum^q_{k=1}[U_{k1} cos(2\pi w_k t)+U_{k2} sin(2\pi w_k t)])
+$$
+$$
+=\sum^q_{k,l=1} cov([U_{k1} cos(2\pi w_k (t+h))+U_{k2} sin(2\pi w_k (t+h))],[U_{l1} cos(2\pi w_k t)+U_{l2} sin(2\pi w_k t)])
+$$
+$$
+=\sum^q_{k=1} cov([U_{k1} cos(2\pi w_k (t+h))+U_{k2} sin(2\pi w_k (t+h))],[U_{k1} cos(2\pi w_k t)+U_{k2} sin(2\pi w_k t)])
+$$
+$$
+=\sum^q_{k=1} cov(U_{k1} cos(2\pi w_k (t+h))+U_{k1} cos(2\pi w_k t))+\sum^q_{k=1} cov(U_{k2} sin(2\pi w_k (t+h))+U_{k2} sin(2\pi w_k t))
+$$
+$$
+=\sum^q_{k=1} \sigma_k^2 cos(2\pi w_k (t+h))cos(2\pi w_k t)+\sum^q_{k=1}\sigma^2_k sin(2\pi w_k (t+h))sin(2\pi w_k t)
+$$
+$$
+=\sum^q_{k=1} \sigma_k^2 cos(2\pi w_k h)
+$$
+
+
+# Q4.5 (Omit, get the wrong question) 
+$$
+x_t=w_t-\theta w_{t-1}
+$$
+    
+### a) Mean and Autocovariance
+    
+$w_t\sim N(0,1)$, mean is 0 and variance is 1. $r_w(s,t)=cov(w_s,w_t)=\sigma^2_w=1$, for $s=t$; $r_w(s,t)=0$ for $s\neq t$.
+    
+Mean: $\mu_x=E[w_t-\theta w_{t-1}]=0$;
+
+Autocovariance: $r_x(s,t)=cov(x_s,x_t)=E[(x_s-\mu_x)(x_t-\mu_x)]=1+\theta^2$, for $s=t$; $r_x(s,t)=cov(x_s,x_t)=-\theta$, for $|t-s|=1$; $r_x(s,t)=0$,else.
+    
+Both series are stationary, because the mean is constant and the autocovariance only depends on $|t-s|$.
+    
+### b) Power Spectrum
+    
+Since $\gamma_0=1+\theta^2$,$\gamma_{\pm1}=\theta$.
+$$
+f(\omega)=\sum^{\infty}_{h=-\infty}\gamma_h e^{-2 \pi i \omega h}=\sigma_w^2[1+\theta^2+\theta(e^{2 \pi i \omega}+e^{-2 \pi i \omega h})]=1+\theta^2+2\theta cos(2 \pi \omega)
+$$
+      
+Note: we have used $cos(\alpha)=(e^{i \alpha}+e^{-i \alpha})/2$. And in our case, $\sigma^2_w=1$.
+
+# 4.6
+$$
+x_t=\phi x_{t-1}-w_t
+$$
+      
+### a) Power Spectrum
+      
+$$
+(1-\phi B)x_t=w_t, \Phi(B)=1-\phi B
+$$
+      
+$\gamma_0=\sigma^2/(1-\phi^2)$ and $\gamma_1=\sigma^2\phi/(1-\phi^2)$
+      
+$$
+|\phi(e^{-2 \pi i \omega})|^2=1+\phi^2-2\phi e^{-2 \pi i \omega}=1+\phi^2-2\phi cos(2 \pi \omega)
+$$
+      
+$f_w(w)=\sigma_w^2$. By property 4.4, we have:
+$$
+f_x(\omega)=\frac{\sigma_w^2}{|\phi(e^{-2 \pi i \omega})|^2}=\frac{\sigma_w^2}{1+\phi^2-2\phi cos(2 \pi \omega)}
+$$
+
+### b) Verify the autocovariance function
+      
+From traditional methods:
+      $\gamma_0=\sigma^2(1+\phi^2+\phi^4+...)=\sigma^2/(1-\phi^2)$; 
+      $\gamma_{\pm1}=\sigma^2(\phi+\phi^3+\phi^5+...)=\sigma^2\phi/(1-\phi^2)$; 
+      $\gamma_{\pm2}=\sigma^2(\phi^2+\phi^4+\phi^6+...)=\sigma^2\phi^2/(1-\phi^2)$; ...
+Therefore: 
+$$
+\gamma_x(h)=\frac{\sigma^2_w \phi^{|h|}}{1-\phi^2}
+$$
+
+The inverse transform of $\gamma_x(h)$ 
+$$
+\gamma_w(h)=cov(w_{t+h},w_t)=cov(x_{t+h}-\phi x_{t+h-1},x_t-\phi x_{t-1})=\gamma_x(h)-\phi \gamma_x(h+1)-\phi \gamma_x(h-1)+\phi^2 \gamma_x(h)
+$$
+
+$$
+=\gamma_x(h)(1+\phi^2)-\phi(\gamma_x(h+1)+\gamma_x(h-1))=\int^{1/2}_{-1/2}[(1+\phi^2)-\phi(e^{2\pi i w}+e^{-2\pi i w})]e^{2\pi i wh}f_x(w)dw
+$$
+
+where $(e^{2\pi i w}+e^{-2\pi i w})=2cos(2\pi w)$. If $w_t\sim WN$, $g_w(w)=\sigma^2_w$:
+      
+$$
+g_w(w)=\sigma^2_w=[(1+\phi^2)-2\phi cos(2\pi w)]f_x(w)
+$$
+
+By the uniqueness of Fourier inverse transformation:
+$$
+\gamma_x(h)=\frac{\sigma^2_w \phi^{|h|}}{1-\phi^2}
+$$
+
+# 4.9 Sunspot Series
+```{r}
+par(mfrow=c(2,1))      
+plot(sunspotz)  #length=459
+dsunspotz=diff(sunspotz)
+plot(dsunspotz) #length=458
+```
+
+### Solution 1 Use diff(sunspotz)
+
+```{r}
+I=abs(fft(dsunspotz))^2/458
+P=(4/458)*I[1:229]
+freq=(0:228)/458
+plot(freq,P,type="l")
+abline(v=1/22, lty="dotted")  # one cycle every 11 years
+
+#Another code with exactly same results is:
+dsunspotz.per = mvspec(dsunspotz, log="no")     
+abline(v=1/11, lty="dotted")  # one cycle every 11 years
+```
+
+The confidence intervals for the sunspotz series at the 11 years cycle, $\omega=1/22 \approx 21/458$.
+```{r}
+invisible(dsunspotz.per$spec[21])  # 1204.158;  sunspotz pgram at freq 1/22
+
+dsunspotz.per$freq[1] #0.004166667
+dsunspotz.per$df      #1.908333, choose df=2
+
+# conf intervals -  returned value:
+2*dsunspotz.per$spec[21]/qchisq(.975,2)  # 326.4291
+2*dsunspotz.per$spec[21]/qchisq(.025,2)  # 47561.69
+```
+An approximate $95\%$ confidence interval (df=2) for the diff(spectrum) $f(1/22)$ is $[326.4291,47561.69]$.
+
+### Solution 2 (not detrend)
+
+The frequency axis is labeled in multiples of $\Delta=1/2$. The peaks at $\omega=0.1\Delta=1/20$, or one cycle per 10 years. And another peak at $\omega=0.01\Delta=1/200$, or one cycle per 100 years.
+```{r}
+sunspotz.per = mvspec(sunspotz, log="no")             
+abline(v=0.1, lty="dotted")  #w=1/10, one cycle every 10 years
+abline(v=0.01, lty="dotted") #w=1/100, one cycle every 100 years
+```
+The confidence intervals for the sunspotz series at the 10 years cycle, $\omega=1/20 \approx 23/459$, and the 100 years cycle $\omega=1/200 \approx 2.3/459$
+```{r}
+sunspotz.per$spec[23]  # 12205.53;  sunspotz pgram at freq 1/20
+sunspotz.per$spec[2.3]  # 4551.155;  sunspotz pgram at freq 1/200, same as spec[2]
+
+dsunspotz.per$freq[1] #0.004166667
+dsunspotz.per$df      #1.908333, choose df=2
+
+# conf intervals -  returned value:
+U = qchisq(.025,2)    # 0.05063  
+L = qchisq(.975,2)    # 7.37775
+2*sunspotz.per$spec[23]/L  # 3308.737
+2*sunspotz.per$spec[23]/U  # 482092.8
+2*sunspotz.per$spec[2.3]/L  # 1233.75
+2*sunspotz.per$spec[2.3]/U  # 179761
+```
+An approximate $95\%$ confidence interval for the spectrum $f(1/20)$ is $[3308.7,482092.8]$. An approximate $95\%$ confidence interval for the spectrum $f(1/200)$ is $[1233.7,179761]$. 
+
+We can also choose the circle=11 years, as shown in solution 1.
+
+
+# 4.10 Salt and Temperature
+
+```{r}
+par(mfrow=c(2,1))      
+plot(salt)
+plot(saltemp)
+```
+
+```{r}
+length(salt)  # n=64
+
+par(mfrow=c(2,1))      
+salt.per = mvspec(salt, log="no")             
+abline(v=1/9, lty="dotted")
+abline(v=1/16, lty="dotted")
+
+saltemp.per = mvspec(saltemp, log="no") 
+abline(v=1/16, lty="dotted")
+
+salt.per$freq[1]  #0.015625
+salt.per$df       #df=2
+
+saltemp.per$freq[1] #0.015625
+saltemp.per$df    #df=2
+```
+
+```{r}
+which.max(salt.per$spec)  #4
+salt.per$freq[4] #0.0625=1/16
+salt.per$freq[7] #0.109375=1/9
+
+which.max(saltemp.per$spec)  #4
+saltemp.per$freq[4] #0.0625=1/16
+```
+
+```{r}
+salt.per$spec[4]  # 60.66648;  salt pgram at freq 1/16 = 4/64
+salt.per$spec[7]  # 23.69029;  salt pgram at freq 1/9 = 7/64
+
+saltemp.per$spec[4]  # 2.43787;  saltemp pgram at freq 1/16 = 4/64
+
+salt.per$df    #df=2
+saltemp.per$df #df=2
+
+# conf intervals -  returned value:
+2*salt.per$spec[4]/qchisq(.975,2)   # 16.44577
+2*salt.per$spec[4]/qchisq(.025,2)  # 2396.198
+
+2*salt.per$spec[7]/qchisq(.975,2)   # 6.422082
+2*salt.per$spec[7]/qchisq(.025,2)  # 935.7164
+
+2*saltemp.per$spec[4]/qchisq(.975,2)   # 0.6608701
+2*saltemp.per$spec[4]/qchisq(.025,2)  # 96.29072
+```
+
+The frequency is 1/16 and 1/9 for salt, and 1/16 for saltemp.
+
+The confidence intervals for the salt series at 1/16 freq, $[16.4,2396]$, and at 1/9 is $[6.4,935.7]$. The confident intervals for the saltemp series at 1/16 freq is $[0.66,96.3]$.
+
+
+# 4.15 Nonparametric spectral of Salt and Temperature
+
+```{r}
+salt.smo = mvspec(salt, spans=c(5,5), taper=.1, log="no")     
+abline(v = 1/16, lty=2)
+
+salt.smo$df    # df = 11.35968
+salt.smo$bandwidth  # B  = 0.09907121
+```
+```{r}
+saltemp.smo = mvspec(saltemp, spans=c(3,3), taper=.1, log="no")     
+abline(v = 1/16, lty=2)
+
+saltemp.smo$df    # df = 6.552102
+saltemp.smo$bandwidth  # B  = 0.05714286
+```
+
+Findings: When choose different spans and taper, the graph shape, degree of freedom, and bandwidth will also change accordingly. The peak will be influenced by the choice of smoothing parameter, according to the graph and theoretical proof. There is Bias-Variance tradeoff. 
+
+# 4.19 Sunspot with autoregressive spectral estimator
+
+```{r}
+spaic=spec.ar(sunspotz,log="no")
+abline(v=frequency(sunspotz)*1/22,lty=3)
+```
+```{r}
+(sunspotz.ar=ar(sunspotz,order.max = 30))
+```
+```{r}
+n = length(sunspotz)
+c() -> AIC -> AICc -> BIC
+for (k in 1:30){
+  fit = ar(sunspotz, order=k, aic=FALSE) 
+  sigma2  = fit$var.pred               
+  BIC[k]  = log(sigma2) + (k*log(n)/n)
+  AICc[k] = log(sigma2) + ((n+k)/(n-k-2))
+  AIC[k]  = log(sigma2) + ((n+2*k)/n) 
+}
+
+dev.new()
+IC = cbind(AICc, BIC+1)
+ts.plot(IC, type="o", xlab="p", ylab="AIC / BIC")
+grid()
+```
+
+AR(4) reached the minimun AIC and BIC. I will choose the AR(4) model. The conventional nonparametric spectral estimator omit the autoregression lags, and treat it as a peak. 
+
+# 4.30
+$$
+y_t=\sum_r a_rx_{t-r}, z_t=\sum_s b_sx_{t-s}
+$$
+
+### a) Show the spectrum of the output
+
+According to Property 4.3,
+$$
+y_t=\sum_ra_rx_{t-r} \rightarrow f_{y}(w)=|A_(w)|^2f_{x}(w)
+$$
+$$
+z_t=\sum_s b_s y_{t-s} \rightarrow f_{z}(w)=|B_(w)|^2f_{y}(w)=|B_(w)|^2[|A_(w)|^2f_{x}(w)]=|A(w)|^2|B(w)|^2 f_x(w)
+$$
+where $A(w)=\sum_r a_r e^{-2\pi iwr}$ and $B(w)=\sum_s a_s e^{-2\pi iws}$.
+
+### b)
+
+Apply the filter $u_t=x_t-x_{t-1}$ and $v_t=u_t-u_{t-12}$. The first difference filter will attenuate the lower frequencies and enhance the higher frequencies. 
+$$
+A(w)=\sum^{\infty}_{r=-\infty}a_r e^{-2\pi iwr}=0+e^{-2\pi iw(0)}-e^{-2\pi iw(1)}=1-e^{-2\pi iw}
+$$
+$$
+|A(w)|^2=(1-e^{-2\pi iw})(1-e^{2\pi iw})=2(1-cos(2\pi w))
+$$
+$$
+B(w)=\sum^{\infty}_{s=-\infty}b_s e^{-2\pi iws}=0+e^{-2\pi iw(0)}-e^{-2\pi iw(12)}=1-e^{-24\pi iw}
+$$
+$$
+|B(w)|^2=(1-e^{-24\pi iw})(1-e^{24\pi iw})=2(1-cos(24\pi w))
+$$
+$$
+f_z(w)=|A(w)|^2|B(w)|^2 f_x(w)=4(1-cos(2\pi w))(1-cos(24\pi w))f_x(w)
+$$
+
+### c) Plot
+
+```{r}
+par(mfrow=c(3,1), mar=c(3,3,1,1), mgp=c(1.6,.6,0))
+w = seq(0, .5, by=.01)
+FRdiff = abs(1-exp(2i*pi*w))^2
+plot(w, FRdiff, type='l', xlab='frequency')
+FRdiff_12=abs(1-exp(24i*pi*w))^2
+plot(w, FRdiff_12, type='l', xlab='frequency')
+FRdiff1_12=FRdiff*FRdiff_12
+plot(w, FRdiff1_12, type='l', xlab='frequency')
+```
+
+# 4.31
+$$
+y_t=ay_{t-1}+x_t,t=\pm1,\pm2,...
+$$
+
+### a)
+$$
+f_y(w)=\frac{f_x(w)}{|\phi(e^{-2\pi iw})|^2}=\frac{f_x(w)}{|1-a e^{-2\pi iw}|^2}=\frac{f_x(w)}{(1-a e^{-2\pi iw})(1-a e^{2\pi iw})}=\frac{f_x(w)}{1+a^2-a(e^{-2\pi iw}+e^{2\pi iw})}=\frac{f_x(w)}{1+a^2-2a cos(2\pi w)}
+$$
+
+### b)
+Use function "curve"
+For a=0.1 and a=0.8
+
+```{r}
+par(mfrow=c(2,1), mar=c(3,3,1,1), mgp=c(1.6,.6,0))
+
+w = seq(0, .5, by=.01)
+FRdiff_0.1 = 1/abs(1-0.1*exp(2i*pi*w))^2
+plot(w,FRdiff_0.1,type='l',xlab ="frequency",ylab ="FR a=0.1")
+
+FRdiff_0.8 = 1/abs(1-0.8*exp(2i*pi*w))^2
+plot(w,FRdiff_0.8,type='l',xlab ="frequency",ylab ="FR a=0.8")
+```

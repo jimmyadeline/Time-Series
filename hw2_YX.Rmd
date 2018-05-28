@@ -1,0 +1,211 @@
+---
+title: "STAT 621 HW 2"
+author: "Yingying Xu"
+date: "1/28/2018 (Due)"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Q.1
+
+$$
+x_t=w_t
+$$
+$$
+y_t=w_t-\theta w_{t-1}+u_t
+$$
+
+### a) ACF $\rho_y(h)$ for $h=0,\pm1,\pm2,...$ of the series $y_t$ as a function of $\sigma^2_w, \sigma^2_u$ and $\theta$
+ 
+ The autocorrelation function (ACF) is defined as:
+$$
+\rho(s,t)=\dfrac{\gamma(s,t)}{\sqrt{\gamma(s,s)\gamma(t,t)}}=\dfrac{\gamma(t+h,t)}{\sqrt{\gamma(t+h,t+h)\gamma(t,t)}}
+$$
+
+The expectation $E[y_t]=E[w_t-\theta w_{t-1}+u_t]=0$ when $w_t$ and $u_t$ are white noise series. Autocovariance function: 
+$$
+\gamma(s,t)=E[(y_s-\mu_s)(y_t-\mu_t)]=E[y_sy_t]=E[(w_s-\theta w_{s-1}+u_s)(w_t-\theta w_{t-1}+u_t)]
+$$
+
+when $s=t$:
+$$
+\gamma(s,t)=E[(y_s-\mu_s)(y_t-\mu_t)]=\sigma^2_w+\theta^2\sigma^2_w+\sigma^2_u=(1+\theta^2)\sigma^2_w+\sigma^2_u
+$$
+$$
+\rho(s,t)=\dfrac{\gamma(s,t)}{\sqrt{\gamma(s,s)\gamma(t,t)}}=1
+$$ 
+
+when $s=t\pm1$:
+$$
+\gamma(s,t)=E[(y_s-\mu_s)(y_t-\mu_t)]=-\theta\sigma^2_w
+$$
+$$
+\rho(s,t)=\dfrac{\gamma(s,t)}{\sqrt{\gamma(s,s)\gamma(t,t)}}=\dfrac{-\theta\sigma^2_w}{(1+\theta^2)\sigma^2_w+\sigma^2_u}
+$$
+
+when $s=else$:
+$$
+\gamma(s,t)=E[(y_s-\mu_s)(y_t-\mu_t)]=0
+$$
+$$
+\rho(s,t)=\dfrac{\gamma(s,t)}{\sqrt{\gamma(s,s)\gamma(t,t)}}=\dfrac{0}{(1+\theta^2)\sigma^2_w+\sigma^2_u}=0
+$$
+
+
+### b) Determine the CCF, $\rho_y(h)$ relating $x_t$ and $y_t$
+ 
+ The cross-correlation function (CCF) between two series is defined as:
+
+$$
+\rho_{xy}(s,t)=\dfrac{\gamma_{xy}(s,t)}{\sqrt{\gamma_x(s,s)\gamma_y(t,t)}}
+$$
+The variance of $Var(x_t)=\sigma^2_w=\gamma_x(s,s)$ and $Var(y_t)=(1+\theta^2)\sigma^2_w+\sigma^2_u=\gamma_y(t,t)$.
+
+where the cross-covariance function is:
+$$
+\gamma_{xy}(s,t)=cov(x_s,y_t)=E[(x_s-\mu_{xs})(y_t-\mu_{yt})]=E[w_s*(w_t-\theta w_{t-1}+u_t)]
+$$
+when $s=t$, $\gamma_{xy}(s,t)=\sigma^2_w$, then:
+$$
+\rho_{xy}(s,t)=\dfrac{\gamma_{xy}(s,t)}{\sqrt{\gamma_x(s,s)\gamma_y(t,t)}}=\dfrac{\sigma^2_w}{\sqrt{\sigma^2_w *((1+\theta^2)\sigma^2_w+\sigma^2_u)}}=\dfrac{\sigma_w}{\sqrt{(1+\theta^2)\sigma^2_w+\sigma^2_u}}
+$$
+
+when $s=t-1$, $\gamma_{xy}(s,t)=-\theta \sigma^2_w$
+$$
+\rho_{xy}(s,t)=\dfrac{\gamma_{xy}(s,t)}{\sqrt{\gamma_x(s,s)\gamma_y(t,t)}}=\dfrac{-\theta \sigma^2_w}{\sqrt{\sigma^2_w *((1+\theta^2)\sigma^2_w+\sigma^2_u)}}=\dfrac{-\theta \sigma_w}{\sqrt{(1+\theta^2)\sigma^2_w+\sigma^2_u}}
+$$
+when $s=else$, $\gamma_{xy}(s,t)=0$,$\rho_{xy}(s,t)=0$
+
+
+### c) Show that $x_t$ and $y_t$ are jointly stationary.
+
+Two series are jointly stationary if they are each stationary and the cross-covariance function is a function only of lag h.
+
+Show $x_t$ is stationary:
+$\mu_x=E[x_t]=E[w_t]=0$. $\gamma(s,t)=0$ if $s\ne t$ and $\gamma(s,t)=\sigma^2_w$ if $s=t$.
+
+Show $y_t$ is stationary:
+$\mu_y=E[y_t]=0$. $\gamma(s,t)=(1+\theta^2)\sigma^2_w+\sigma^2_u$ if $s=t$; $\gamma(s,t)=-\theta\sigma^2_w$ if $s=t\pm1$;
+$\gamma(s,t)=0$ if $s=else$.
+
+Both $x_t$ and $y_t$ are stationary because their mean are constant and independent of time; their autocovariance function $\gamma(s,t)$ depends on $|s-t|$ only.
+
+The cross-covariance function: 
+Assume $s=t+h$. when $h=0$, $\gamma_{xy}(s,t)=\sigma^2_w$; when $h=-1$,$\gamma_{xy}(s,t)=-\theta \sigma^2_w$; when $h=else$, $\gamma_{xy}(s,t)=0$, which is a function only of lag h.
+
+Hence, the two series are jointly stationary.
+
+# Q.2
+
+$$
+x_t= \mu + w_t + \theta w_{t-1}, w_t \sim wn(0,\sigma^2_w)
+$$
+
+### a) Mean
+
+$E(x_t)=E[\mu] + E[w_t] + \theta E[w_{t-1}]=\mu+0+0=\mu$.
+
+### b) Autocovariance
+$$
+\gamma_x(0)=E[(w_t + \theta w_{t-1})(w_t + \theta w_{t-1})]=\sigma^2_w+\theta^2 \sigma^2_w=\sigma^2_w(1+\theta^2)
+$$
+
+$$
+\gamma_x(+1)=E[(w_t + \theta w_{t-1})(w_{t+1} + \theta w_{t})]=\sigma^2_w \theta
+$$
+$$
+\gamma_x(-1)=E[(w_t + \theta w_{t-1})(w_{t-1} + \theta w_{t-2})]=\sigma^2_w \theta
+$$
+
+$$
+\gamma_x(h)=E[(w_t + \theta w_{t-1})(w_{t\pm h} + \theta w_{t-1 \pm h})]
+$$ 
+when $|h|\ge 2, \gamma_x(h)=0$. And $\gamma_x(0)=\sigma^2_w(1+\theta^2)$,$\gamma_x(\pm1)=\sigma^2_w \theta$.
+
+### c) Show $x_t$ is stationary.
+$x_t$ is stationary, because the mean is constant and independent of time $E(x_t)=\mu$; the autocovariance function $\gamma(s,t)$ depends on $|s-t|$ only.
+
+
+### d)
+
+If a time series is stationary with mean function $\mu_t=\mu$ constant, then we can estimate it by the sample mean $\overline{x}=\dfrac{1}{n} \sum^n_{t=1}x_t$. And the $var(\overline{x})$:
+
+$$
+var(\overline{x})=var(\dfrac{1}{n}\sum^n_{t=1}x_t)=\dfrac{1}{n^2}cov(\sum^n_{t=1}x_t,\sum^n_{s=1}x_s)
+=\dfrac{1}{n^2}(n\gamma_x(0)+(n-1)\gamma_x(1)+(n-1)\gamma_x(-1)...)=\dfrac{1}{n}\sum^n_{h=-n}(1-\dfrac{|h|}{n})\gamma_x(h)
+$$
+
+As we've computed: $\gamma_x(0)=\sigma^2_w(1+\theta^2)$,$\gamma_x(\pm1)=\sigma^2_w \theta$, and $\gamma_x(h)=0$ otherwise, then:
+
+$$
+var(\overline{x})=\dfrac{1}{n^2}(n(\sigma^2_w(1+\theta^2))+(n-1)(\sigma^2_w \theta)+(n-1)(\sigma^2_w \theta))=\dfrac{(1+\theta)^2\sigma^2_w}{n}-\dfrac{2\theta\sigma^2_w}{n^2}
+$$
+
+when $\theta = 1$:
+$$
+var(\overline{x})=(4/n-2/n^2)\sigma^2_w=(4n-2)\sigma^2_w/n^2
+$$
+
+when $\theta = 0$:
+$$
+var(\overline{x})=\sigma^2_w/n
+$$
+
+when $\theta = -1$:
+$$
+var(\overline{x})=2\sigma^2_w/n^2
+$$
+
+### e) 
+In our case, $E(\overline{x})=\mu$, and the standard error of the estimate is the square root of $var(\overline{x})$. If $(n-1)/n \approx 1$. 
+
+For $\theta =1$, $var(\overline{x})=(4/n-2/n^2)\sigma^2_w=4(n-0.5)\sigma^2_w/n^2 \approx 4\sigma^2_w/n$, the standard error of $\overline{x}$ is greater than the white noise case. The estimate of the mean $\mu$ is less accurate in case 1. 
+
+For $\theta =0$, the  standard error of $\overline{x}$ is equal to the white noise case. The accurancy of mean $\mu$ is the same compared with white noise in case 2. It is a white noise function with drift.
+
+For $\theta =-1$, the  standard error is the root of $var(\overline{x})=2\sigma^2_w/n^2$, which is smaller than the white noise case. The estimate of the mean $\mu$ is more accurate than white noise in case 3. 
+
+# Q.3 Autoregressions
+
+$$
+x_t=x_{t-1}-.9x_{t-2}+w_t
+$$
+
+### a)
+```{r}
+set.seed(1000)
+w = rnorm(200,0,1)
+x=filter(w,filter=c(1,-.9), method="recursive") 
+plot.ts(x,lwd=1.5,ylab='')
+```
+```{r}
+#### Another method
+y<-double(200)
+y[1] <- 0
+y[2] <- 0
+for (i in 3:200)
+{
+  y[i] <- y[i-1]-0.9*y[i-2]+w[i]
+}
+y<-window(ts(y))
+plot(y,lwd=1.5,ylab='')
+```
+
+### b) plot both the ACF and PACF
+
+```{r}
+library(stats)
+a<-acf(x,type='correlation',ylab='ACF',lwd=3,col="darkgreen")
+``` 
+```{r}
+library(stats)
+b<-pacf(x,ylab='PACF',lwd=3,col="darkred")
+``` 
+ 
+### c) What do the ACF and PACF tell you about the series.
+ 
+This is an AR(2) process $x_t=x_{t-1}-.9x_{t-2}+w_t$. ACF and PACF become smaller with the lag of time, suggesting the current situation is less likely being influenced by the situation long time ago. As showing in the graph, there is almost no influence after lag(20), and in the PACF graph, only the first two PACF is greater than the blue line. 
+
